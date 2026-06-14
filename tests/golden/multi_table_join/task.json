@@ -1,0 +1,11 @@
+{
+  "task_id": "multi_table/customer_totals",
+  "question": "What is total order amount by customer name?",
+  "data_paths": ["data/customers.csv", "data/orders.csv"],
+  "tags": ["core", "join", "s3"],
+  "subset": "core",
+  "evaluator": {
+    "type": "contains",
+    "expected": "125"
+  }
+}

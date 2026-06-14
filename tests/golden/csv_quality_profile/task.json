@@ -1,0 +1,11 @@
+{
+  "task_id": "csv_quality/null_rate",
+  "question": "Which column has the highest null rate?",
+  "data_paths": ["data/messy.csv"],
+  "tags": ["core", "data-quality", "s1"],
+  "subset": "core",
+  "evaluator": {
+    "type": "exact",
+    "expected": "notes"
+  }
+}

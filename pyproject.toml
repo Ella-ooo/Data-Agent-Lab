@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "data-agent-lab"
+version = "0.2.0"
+description = "Verification-native data analysis agent with benchmark adapters"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "duckdb>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+ui = ["streamlit>=1.32"]
+
+[project.scripts]
+dal = "data_agent_lab.cli.main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["data_agent_lab"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,12 @@
+{
+  "task_id": "csv_revenue_agg/electronics_feb",
+  "question": "What was Electronics revenue in 2024-02?",
+  "data_paths": ["data/revenue.csv"],
+  "tags": ["core", "descriptive", "single-table", "s2"],
+  "subset": "core",
+  "evaluator": {
+    "type": "numeric_tolerance",
+    "expected": 1500,
+    "tolerance": 0.01
+  }
+}

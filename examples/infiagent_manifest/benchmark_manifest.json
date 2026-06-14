@@ -1,0 +1,13 @@
+{
+  "tasks": [
+    {
+      "id": "infiagent-demo-001",
+      "question": "How many rows are in the CSV?",
+      "csv_path": "data/sample.csv",
+      "expected": "3",
+      "eval_type": "exact",
+      "tags": ["infiagent", "demo"],
+      "subset": "demo"
+    }
+  ]
+}
