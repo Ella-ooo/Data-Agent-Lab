@@ -9,6 +9,13 @@ def _quote(col: str) -> str:
     return f'"{col}"'
 
 
+def _aggregate_alias(agg: str, metric: str, explicit_alias: str | None = None) -> str:
+    if explicit_alias:
+        return explicit_alias
+    prefix = "avg" if agg.lower() in {"avg", "average", "mean"} else "total"
+    return f"{prefix}_{metric}"
+
+
 def build_sql(plan: dict[str, Any]) -> str:
     task_type = plan.get("task_type")
     if plan.get("join"):
@@ -16,22 +23,24 @@ def build_sql(plan: dict[str, Any]) -> str:
         metric = None
         group_by = []
         agg = "sum"
+        alias = None
         for step in plan.get("steps", []):
             if step.get("op") == "aggregate":
                 metric = step.get("metric")
                 group_by = step.get("group_by", [])
                 agg = step.get("agg", "sum")
-        metric_q = f'r.{_quote(metric).strip(chr(34))}"' if metric else "r.amount"
+                alias = step.get("alias")
         metric_q = f'r."{metric}"'
+        metric_alias = _aggregate_alias(agg, metric, alias)
         group_exprs = [f'l."{g}"' for g in group_by if g]
         group_q = ", ".join(group_exprs)
-        select = f"{group_q}, {agg.upper()}({metric_q}) AS total_{metric}" if group_q else f"{agg.upper()}({metric_q}) AS total_{metric}"
+        select = f"{group_q}, {agg.upper()}({metric_q}) AS {metric_alias}" if group_q else f"{agg.upper()}({metric_q}) AS {metric_alias}"
         group_sql = f" GROUP BY {group_q}" if group_q else ""
         on = j["on"]
         return (
             f"SELECT {select} FROM {j['left']} l "
             f'JOIN {j["right"]} r ON l."{on}" = r."{on}"'
-            f"{group_sql} ORDER BY total_{metric} DESC"
+            f"{group_sql} ORDER BY {metric_alias} DESC"
         )
 
     table = plan["tables"][0]
@@ -51,12 +60,14 @@ def build_sql(plan: dict[str, Any]) -> str:
     group_by: list[str] = []
     filters = plan.get("filters", [])
     agg = "sum"
+    alias = None
 
     for step in plan.get("steps", []):
         if step.get("op") == "aggregate":
             metric = step.get("metric")
             group_by = step.get("group_by", [])
             agg = step.get("agg", "sum")
+            alias = step.get("alias")
         if step.get("op") == "filter":
             filters = step.get("filters", filters)
 
@@ -74,9 +85,10 @@ def build_sql(plan: dict[str, Any]) -> str:
         return f"SELECT COUNT(*) AS row_count FROM {table}{where_sql}"
 
     metric_q = _quote(metric)
+    metric_alias = _aggregate_alias(agg, metric, alias)
     if group_by:
         group_q = ", ".join(_quote(g) for g in group_by)
-        select = f"{group_q}, {agg.upper()}({metric_q}) AS total_{metric}"
+        select = f"{group_q}, {agg.upper()}({metric_q}) AS {metric_alias}"
         return f"SELECT {select} FROM {table}{where_sql} GROUP BY {group_q} ORDER BY {group_q}"
 
-    return f"SELECT {agg.upper()}({metric_q}) AS total_{metric} FROM {table}{where_sql}"
+    return f"SELECT {agg.upper()}({metric_q}) AS {metric_alias} FROM {table}{where_sql}"

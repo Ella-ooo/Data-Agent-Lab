@@ -21,6 +21,25 @@ def _find_column(table: TableProfile, keywords: tuple[str, ...]) -> str | None:
     return None
 
 
+def _find_numeric_column(table: TableProfile, keywords: tuple[str, ...] = ()) -> str | None:
+    for col in table.columns:
+        dtype = col.dtype.upper()
+        if not any(k in dtype for k in ("INT", "DOUBLE", "FLOAT", "DECIMAL", "NUMERIC", "BIGINT")):
+            continue
+        name = col.name.lower()
+        if not keywords or any(k in name for k in keywords):
+            return col.name
+    return None
+
+
+def _sample_value_mentioned(sample: str, question: str) -> bool:
+    sample = sample.strip()
+    if not sample:
+        return False
+    pattern = rf"(?<!\w){re.escape(sample)}(?!\w)"
+    return re.search(pattern, question, flags=re.IGNORECASE) is not None
+
+
 def _parse_filters(question: str, table: TableProfile) -> list[dict[str, Any]]:
     filters: list[dict[str, Any]] = []
     q = question.lower()
@@ -34,7 +53,7 @@ def _parse_filters(question: str, table: TableProfile) -> list[dict[str, Any]]:
     for col in table.columns:
         for sample in col.sample_values:
             sv = str(sample)
-            if sv.lower() in q or sv in question:
+            if _sample_value_mentioned(sv, question):
                 if col.dtype.upper().startswith("VARCHAR") or "CHAR" in col.dtype.upper():
                     filters.append({"column": col.name, "op": "=", "value": sv})
                     break
@@ -102,9 +121,31 @@ def classify_and_plan(question: str, profile: DataProfile) -> dict[str, Any]:
         }
 
     metric_col = _find_column(table, ("revenue", "amount", "sales", "value", "count"))
+    average_metric_col = _find_column(table, ("revenue", "amount", "sales", "value", "rating", "score")) or _find_numeric_column(table)
     category_col = _find_column(table, ("category", "segment", "product", "type"))
     month_col = _find_column(table, ("month", "date", "period"))
     filters = _parse_filters(question, table)
+
+    if any(k in q for k in ("average", "mean", "avg")) and average_metric_col:
+        return {
+            "version": 1,
+            "task_type": "descriptive",
+            "tables": [table_name],
+            "columns": [average_metric_col] + [f["column"] for f in filters],
+            "aggregation_grain": "global",
+            "required_operations": ["aggregate"],
+            "steps": [
+                {"op": "filter", "filters": filters},
+                {"op": "aggregate", "metric": average_metric_col, "agg": "avg", "alias": f"avg_{average_metric_col}"},
+            ] if filters else [
+                {"op": "aggregate", "metric": average_metric_col, "agg": "avg", "alias": f"avg_{average_metric_col}"},
+            ],
+            "expected_result_columns": [f"avg_{average_metric_col}"],
+            "expect_nonempty": True,
+            "uses_limit": False,
+            "filters": filters,
+            "anti_patterns": ["average_of_group_averages"],
+        }
 
     if "by" in q and metric_col:
         group_cols = []

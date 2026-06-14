@@ -22,6 +22,7 @@ def test_golden_adapter_lists_fixtures():
     ids = {t.task_id for t in tasks}
     assert "csv_revenue_agg/electronics_feb" in ids
     assert "csv_quality/null_rate" in ids
+    assert "csv_revenue_agg/overall_average_rating" in ids
 
 
 def test_golden_adapter_tag_filter():

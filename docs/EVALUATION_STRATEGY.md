@@ -2,7 +2,7 @@
 
 Version: 0.1  
 Date: 2026-06-14  
-Status: Adapter framework implemented; agent integration pending.
+Status: Adapter framework implemented; `analyze` agent integration active for golden tasks.
 
 ## 1. Purpose
 
@@ -90,7 +90,7 @@ Aligned with PROJECT_DESIGN §14.3, with **adapter readiness** called out explic
 
 | Stage | Adapter | Core gate | Notes |
 | --- | --- | --- | --- |
-| 1 | `golden` | >= 70% Core golden pass | Shipped now |
+| 1 | `golden` | >= 70% Core golden pass | Shipped; current Core golden pass is 4/4 |
 | 2 | `infiagent` | Core gate + manifest | CSV closed-form; manifest maps DAEval subset |
 | 3 | — | DataSciBench-style | Deferred; design TBD |
 | 4 | `dab` | S3 complete | SQLite/DuckDB subset only (`DAB_SQLITE_DUCKDB_DATASETS`) |
@@ -143,7 +143,7 @@ dal bench adapters
 
 # Internal golden suite
 dal bench list --adapter golden --tag core
-dal bench run --adapter golden --agent stub --tag core
+dal bench run --adapter golden --agent analyze --tag core
 
 # Saved report
 dal bench report runs/benchmarks/golden_20260614T120000Z/report.json
@@ -157,7 +157,7 @@ Exit codes:
 
 ## 6. Integration with Agent Pipeline
 
-When `dal analyze` ships (S3), the benchmark runner will call:
+The benchmark runner can call the current `dal analyze` pipeline through:
 
 ```python
 def analyze_agent(task: BenchmarkTask) -> str:
@@ -186,7 +186,7 @@ Benchmark work runs **alongside** agent slices, not after S5:
 | --- | --- | --- |
 | S0 | Design lock | Adapter interface + golden schema (**done**) |
 | S1 | Profiling pipeline | Golden profiling tasks + `dal bench run` CI |
-| S2 | Single-table loop + PSE grain | Add avg-of-avgs golden trap |
+| S2 | Single-table loop + PSE grain | Avg-of-avgs golden trap (**done**) |
 | S3 | Multi-table Core + field extractor | Wire `analyze` as AgentFn; infiagent manifest script |
 | S4 | Stretch analytics | Expand golden + infiagent subset |
 | S5 | Streamlit UI | DAB subset runs + submission export |
@@ -201,5 +201,6 @@ Benchmark work runs **alongside** agent slices, not after S5:
 
 - `pytest tests/unit/test_benchmark_adapters.py` passes.
 - `dal bench run --adapter golden --agent stub` achieves 100% on configured fixtures.
+- `dal bench run --adapter golden --agent analyze --tag core` achieves 100% on Core golden fixtures.
 - DAB adapter lists SQLite/DuckDB subset when `--root` is provided.
 - Exported `submission.json` matches DAB leaderboard schema for `dab` adapter.

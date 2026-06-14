@@ -9,6 +9,7 @@ from data_agent_lab.catalog.profiler import profile
 ROOT = Path(__file__).resolve().parents[2]
 REVENUE_DATA = ROOT / "tests/golden/csv_revenue_agg/data"
 QUALITY_DATA = ROOT / "tests/golden/csv_quality_profile/data"
+AVG_TRAP_DATA = ROOT / "tests/golden/avg_of_avgs_trap/data"
 
 
 def test_profile_csv_folder():
@@ -28,6 +29,15 @@ def test_analyze_null_rate_question():
     result = analyze("Which column has the highest null rate?", QUALITY_DATA)
     assert result.status == "completed"
     assert result.answer.lower() == "notes"
+
+
+def test_analyze_overall_average_uses_global_grain():
+    result = analyze("What is the overall average rating?", AVG_TRAP_DATA)
+    assert result.status == "completed"
+    assert result.plan["aggregation_grain"] == "global"
+    assert result.plan["steps"][-1]["agg"] == "avg"
+    assert "AVG" in result.sql
+    assert float(result.answer) == 9.0
 
 
 def test_run_artifacts_created():

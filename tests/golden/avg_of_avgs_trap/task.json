@@ -1,0 +1,12 @@
+{
+  "task_id": "csv_revenue_agg/overall_average_rating",
+  "question": "What is the overall average rating?",
+  "data_paths": ["data/ratings.csv"],
+  "tags": ["core", "descriptive", "single-table", "s2", "pse", "grain-trap"],
+  "subset": "core",
+  "evaluator": {
+    "type": "numeric_tolerance",
+    "expected": 9.0,
+    "tolerance": 0.0001
+  }
+}
