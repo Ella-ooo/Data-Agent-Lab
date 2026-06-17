@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+import duckdb
+
 from data_agent_lab.catalog.schema import DataProfile
 from data_agent_lab.tools.sql import SQLExecutionResult
 from data_agent_lab.validation.types import Severity, ValidationCheck
@@ -79,5 +81,82 @@ def validate_plan_to_code(plan: dict[str, Any], sql: str) -> list[ValidationChec
             passed,
             "undeclared column refs" if issues else "SQL references declared columns",
             {"missing_in_sql": issues, "tables": list(declared_tables)},
+        )
+    ]
+
+
+def validate_join_loss(
+    conn: duckdb.DuckDBPyConnection,
+    plan: dict[str, Any],
+    *,
+    warn_threshold: float = 0.05,
+) -> list[ValidationCheck]:
+    join = plan.get("join")
+    if not join:
+        return []
+
+    left = join["left"]
+    right = join["right"]
+    key = join["on"]
+    try:
+        left_rows = conn.execute(f'SELECT COUNT(*) FROM {left}').fetchone()[0]
+        right_rows = conn.execute(f'SELECT COUNT(*) FROM {right}').fetchone()[0]
+        matched_left_rows = conn.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM {left} l
+            WHERE EXISTS (
+              SELECT 1 FROM {right} r WHERE l."{key}" = r."{key}"
+            )
+            """
+        ).fetchone()[0]
+        matched_right_rows = conn.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM {right} r
+            WHERE EXISTS (
+              SELECT 1 FROM {left} l WHERE l."{key}" = r."{key}"
+            )
+            """
+        ).fetchone()[0]
+    except Exception as exc:  # noqa: BLE001 - validation should report SQL issues
+        return [
+            ValidationCheck(
+                "join_loss",
+                Severity.ERROR,
+                False,
+                f"Could not compute join-loss metrics: {exc}",
+                {"left": left, "right": right, "key": key},
+            )
+        ]
+
+    left_unmatched = left_rows - matched_left_rows
+    right_unmatched = right_rows - matched_right_rows
+    left_loss_ratio = left_unmatched / left_rows if left_rows else 0.0
+    right_loss_ratio = right_unmatched / right_rows if right_rows else 0.0
+    max_loss_ratio = max(left_loss_ratio, right_loss_ratio)
+    passed = max_loss_ratio <= warn_threshold
+    message = (
+        f"Join coverage on {key}: left_unmatched={left_unmatched}/{left_rows}, "
+        f"right_unmatched={right_unmatched}/{right_rows}"
+    )
+    return [
+        ValidationCheck(
+            "join_loss",
+            Severity.WARNING if not passed else Severity.INFO,
+            passed,
+            message,
+            {
+                "left": left,
+                "right": right,
+                "key": key,
+                "left_rows": left_rows,
+                "right_rows": right_rows,
+                "left_unmatched": left_unmatched,
+                "right_unmatched": right_unmatched,
+                "left_loss_ratio": round(left_loss_ratio, 6),
+                "right_loss_ratio": round(right_loss_ratio, 6),
+                "warn_threshold": warn_threshold,
+            },
         )
     ]

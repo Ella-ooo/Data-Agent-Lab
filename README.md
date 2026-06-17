@@ -115,7 +115,7 @@ docs/               # 设计文档 | design docs
 
 ## 状态 | Status
 
-Core MVP（S0–S3）已实现，无需 LLM API 即可跑通 golden benchmark（4/4 pass）。
+Core MVP（S0–S3）已实现，无需 LLM API 即可跑通 golden benchmark（5/5 pass）。
 
 Stretch：外部 LLM planner、LangGraph 编排、回归/异常检测、完整 DAB 多库支持。
 

@@ -18,7 +18,7 @@ from data_agent_lab.reporting.markdown import render_report
 from data_agent_lab.runtime.artifacts import RunContext
 from data_agent_lab.tools.sql import execute_sql
 from data_agent_lab.validation.claim_checks import claim_validation, workflow_reexecution_check
-from data_agent_lab.validation.data_checks import validate_dataset, validate_plan_to_code, validate_query_result
+from data_agent_lab.validation.data_checks import validate_dataset, validate_join_loss, validate_plan_to_code, validate_query_result
 from data_agent_lab.validation.evaluator_writer import write_evaluator
 from data_agent_lab.validation.plan_semantics import verify_plan_semantics
 from data_agent_lab.validation.types import Severity, checks_to_log, worst_severity
@@ -99,6 +99,7 @@ class AnalyzePipeline:
             sql = build_sql(plan)
             ctx.write_text("code/queries.sql", sql + "\n")
             all_checks.extend(validate_plan_to_code(plan, sql))
+            all_checks.extend(validate_join_loss(conn, plan))
             all_checks.extend(workflow_reexecution_check(plan, sql))
 
             sql_result = execute_sql(conn, sql, ctx.path("outputs/result.csv"))

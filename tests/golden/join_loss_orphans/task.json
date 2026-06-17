@@ -1,0 +1,11 @@
+{
+  "task_id": "multi_table/join_loss_orphans",
+  "question": "What is total order amount by customer name?",
+  "data_paths": ["data/customers.csv", "data/orders.csv"],
+  "tags": ["core", "join", "join-loss", "s3"],
+  "subset": "core",
+  "evaluator": {
+    "type": "contains",
+    "expected": "125"
+  }
+}

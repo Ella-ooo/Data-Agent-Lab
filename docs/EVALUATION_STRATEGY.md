@@ -90,7 +90,7 @@ Aligned with PROJECT_DESIGN §14.3, with **adapter readiness** called out explic
 
 | Stage | Adapter | Core gate | Notes |
 | --- | --- | --- | --- |
-| 1 | `golden` | >= 70% Core golden pass | Shipped; current Core golden pass is 4/4 |
+| 1 | `golden` | >= 70% Core golden pass | Shipped; current Core golden pass is 5/5 |
 | 2 | `infiagent` | Core gate + manifest | CSV closed-form; manifest maps DAEval subset |
 | 3 | — | DataSciBench-style | Deferred; design TBD |
 | 4 | `dab` | S3 complete | SQLite/DuckDB subset only (`DAB_SQLITE_DUCKDB_DATASETS`) |
@@ -187,7 +187,7 @@ Benchmark work runs **alongside** agent slices, not after S5:
 | S0 | Design lock | Adapter interface + golden schema (**done**) |
 | S1 | Profiling pipeline | Golden profiling tasks + `dal bench run` CI |
 | S2 | Single-table loop + PSE grain | Avg-of-avgs golden trap (**done**) |
-| S3 | Multi-table Core + field extractor | Wire `analyze` as AgentFn; infiagent manifest script |
+| S3 | Multi-table Core + field extractor | Join-loss golden trap (**done**); infiagent manifest script next |
 | S4 | Stretch analytics | Expand golden + infiagent subset |
 | S5 | Streamlit UI | DAB subset runs + submission export |
 
