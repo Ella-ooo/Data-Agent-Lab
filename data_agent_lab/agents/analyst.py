@@ -16,6 +16,20 @@ def _aggregate_alias(agg: str, metric: str, explicit_alias: str | None = None) -
     return f"{prefix}_{metric}"
 
 
+def _extraction_expression_map(plan: dict[str, Any]) -> dict[str, str]:
+    expressions: dict[str, str] = {}
+    routes = {step.get("column"): step.get("sql_expression") for step in plan.get("extraction_steps", [])}
+    for step in plan.get("steps", []):
+        if step.get("op") != "extract_field":
+            continue
+        alias = step.get("as")
+        source = step.get("source_column")
+        sql_expression = routes.get(source)
+        if alias and sql_expression:
+            expressions[alias] = sql_expression
+    return expressions
+
+
 def build_sql(plan: dict[str, Any]) -> str:
     task_type = plan.get("task_type")
     if plan.get("join"):
@@ -61,6 +75,7 @@ def build_sql(plan: dict[str, Any]) -> str:
     filters = plan.get("filters", [])
     agg = "sum"
     alias = None
+    extraction_exprs = _extraction_expression_map(plan)
 
     for step in plan.get("steps", []):
         if step.get("op") == "aggregate":
@@ -73,7 +88,7 @@ def build_sql(plan: dict[str, Any]) -> str:
 
     where_clauses = []
     for f in filters:
-        col = _quote(f["column"])
+        col = extraction_exprs.get(f["column"], _quote(f["column"]))
         val = f["value"]
         if isinstance(val, str):
             where_clauses.append(f"{col} = '{val}'")

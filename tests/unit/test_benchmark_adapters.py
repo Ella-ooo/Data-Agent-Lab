@@ -23,6 +23,7 @@ def test_golden_adapter_lists_fixtures():
     assert "csv_revenue_agg/electronics_feb" in ids
     assert "csv_quality/null_rate" in ids
     assert "csv_revenue_agg/overall_average_rating" in ids
+    assert "text_field/year_revenue_2020" in ids
 
 
 def test_golden_adapter_tag_filter():

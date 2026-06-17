@@ -30,11 +30,11 @@ def route_extraction(column: ColumnProfile) -> ExtractionRoute | None:
 
     samples = [str(v) for v in column.sample_values]
     if any(DATE_PATTERN.search(s) for s in samples):
-        expr = f"regexp_extract(\"{column.name}\", '(19|20)\\\\d{{2}}', 1)"
+        expr = f"try_cast(regexp_extract(\"{column.name}\", '((?:19|20)[0-9]{{2}})', 1) AS INTEGER)"
         return ExtractionRoute(column.name, "regex_year_anchor", 1.0, expr)
 
     if any(YEAR_PATTERN.search(s) for s in samples):
-        expr = f"try_cast(regexp_extract(\"{column.name}\", '(19|20)\\\\d{{2}}', 1) AS INTEGER)"
+        expr = f"try_cast(regexp_extract(\"{column.name}\", '((?:19|20)[0-9]{{2}})', 1) AS INTEGER)"
         return ExtractionRoute(column.name, "regex_year_try_cast", 0.9, expr)
 
     return ExtractionRoute(column.name, "raw_text", 0.5, f"\"{column.name}\"")

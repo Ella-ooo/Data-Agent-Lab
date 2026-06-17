@@ -1,0 +1,12 @@
+{
+  "task_id": "text_field/year_revenue_2020",
+  "question": "What was total revenue for contracts signed in 2020?",
+  "data_paths": ["data/contracts.csv"],
+  "tags": ["core", "descriptive", "text-field", "field-extraction", "s3"],
+  "subset": "core",
+  "evaluator": {
+    "type": "numeric_tolerance",
+    "expected": 1800,
+    "tolerance": 0.01
+  }
+}

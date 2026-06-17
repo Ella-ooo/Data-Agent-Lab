@@ -13,6 +13,7 @@ REVENUE_DATA = ROOT / "tests/golden/csv_revenue_agg/data"
 QUALITY_DATA = ROOT / "tests/golden/csv_quality_profile/data"
 AVG_TRAP_DATA = ROOT / "tests/golden/avg_of_avgs_trap/data"
 JOIN_LOSS_DATA = ROOT / "tests/golden/join_loss_orphans/data"
+TEXT_YEAR_DATA = ROOT / "tests/golden/text_year_extraction/data"
 
 
 def test_profile_csv_folder():
@@ -73,6 +74,16 @@ def test_analyze_join_loss_records_validation_warning():
     assert join_checks
     assert join_checks[0]["severity"] == "warning"
     assert join_checks[0]["details"]["right_unmatched"] == 1
+
+
+def test_analyze_text_field_year_extraction():
+    result = analyze("What was total revenue for contracts signed in 2020?", TEXT_YEAR_DATA)
+    assert result.status == "completed"
+    assert result.plan["required_operations"] == ["extract_field", "filter", "aggregate"]
+    assert result.plan["extraction_steps"]
+    assert "regexp_extract" in result.sql
+    assert "2020" in result.sql
+    assert "1800" in result.answer
 
 
 def test_run_artifacts_created():

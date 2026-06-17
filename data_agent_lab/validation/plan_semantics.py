@@ -91,4 +91,29 @@ def verify_plan_semantics(plan: dict[str, Any]) -> list[ValidationCheck]:
             )
         )
 
+    requires_extraction = "extract_field" in required_ops or any(
+        step.get("op") == "extract_field" for step in plan.get("steps", [])
+    )
+    extraction_steps = plan.get("extraction_steps", [])
+    if requires_extraction and not extraction_steps:
+        checks.append(
+            ValidationCheck(
+                name="field_extraction_strategy",
+                severity=Severity.ERROR,
+                passed=False,
+                message="Field extraction required but no extraction strategy declared",
+            )
+        )
+    elif requires_extraction:
+        weak = [step for step in extraction_steps if float(step.get("sample_validation_rate", 0.0)) < 0.8]
+        checks.append(
+            ValidationCheck(
+                name="field_extraction_strategy",
+                severity=Severity.ERROR if weak else Severity.INFO,
+                passed=not weak,
+                message="Field extraction strategy accepted" if not weak else "Field extraction sample validation rate below threshold",
+                details={"extraction_steps": extraction_steps, "weak_steps": weak},
+            )
+        )
+
     return checks

@@ -60,6 +60,18 @@ def _parse_filters(question: str, table: TableProfile) -> list[dict[str, Any]]:
     return filters
 
 
+def _parse_year(question: str) -> int | None:
+    match = re.search(r"\b((?:19|20)\d{2})\b", question)
+    return int(match.group(1)) if match else None
+
+
+def _find_text_year_column(table: TableProfile) -> str | None:
+    for col in table.columns:
+        if col.is_unstructured_text:
+            return col.name
+    return None
+
+
 def _plan_join(question: str, profile: DataProfile) -> dict[str, Any]:
     t1, t2 = profile.tables[0], profile.tables[1]
     keys1 = {c.name for c in t1.columns}
@@ -125,6 +137,34 @@ def classify_and_plan(question: str, profile: DataProfile) -> dict[str, Any]:
     category_col = _find_column(table, ("category", "segment", "product", "type"))
     month_col = _find_column(table, ("month", "date", "period"))
     filters = _parse_filters(question, table)
+    requested_year = _parse_year(question)
+    text_year_col = _find_text_year_column(table)
+
+    if requested_year and text_year_col and metric_col and not filters:
+        extracted_name = f"{text_year_col}_year"
+        return {
+            "version": 1,
+            "task_type": "descriptive",
+            "tables": [table_name],
+            "columns": [text_year_col, metric_col],
+            "aggregation_grain": "global",
+            "required_operations": ["extract_field", "filter", "aggregate"],
+            "steps": [
+                {
+                    "op": "extract_field",
+                    "source_column": text_year_col,
+                    "field": "year",
+                    "as": extracted_name,
+                },
+                {"op": "filter", "filters": [{"column": extracted_name, "op": "=", "value": requested_year}]},
+                {"op": "aggregate", "metric": metric_col, "agg": "sum"},
+            ],
+            "expected_result_columns": [f"total_{metric_col}"],
+            "expect_nonempty": True,
+            "uses_limit": False,
+            "filters": [{"column": extracted_name, "op": "=", "value": requested_year}],
+            "extraction_columns": [text_year_col],
+        }
 
     if any(k in q for k in ("average", "mean", "avg")) and average_metric_col:
         return {
@@ -209,7 +249,7 @@ def enrich_plan_with_extractions(plan: dict[str, Any], profile: DataProfile) -> 
     table = profile.table(plan["tables"][0])
     if not table:
         return plan
-    unstructured = [c.name for c in table.columns if c.is_unstructured_text]
+    unstructured = plan.get("extraction_columns") or [c.name for c in table.columns if c.is_unstructured_text]
     if unstructured:
         plan = {**plan, "extraction_columns": unstructured}
         plan["extraction_steps"] = extraction_steps_for_plan(plan, table.columns)

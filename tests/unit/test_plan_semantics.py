@@ -34,3 +34,20 @@ def test_overall_average_does_not_filter_on_single_letter_sample():
     assert plan["aggregation_grain"] == "global"
     assert plan.get("filters") == []
     assert plan["expected_result_columns"] == ["avg_rating"]
+
+
+def test_missing_field_extraction_strategy_is_blocked():
+    plan = {
+        "task_type": "descriptive",
+        "aggregation_grain": "global",
+        "required_operations": ["extract_field", "filter", "aggregate"],
+        "steps": [
+            {"op": "extract_field", "source_column": "details", "field": "year", "as": "details_year"},
+            {"op": "filter", "filters": [{"column": "details_year", "op": "=", "value": 2020}]},
+            {"op": "aggregate", "metric": "revenue", "agg": "sum"},
+        ],
+        "expected_result_columns": ["total_revenue"],
+        "uses_limit": False,
+    }
+    checks = verify_plan_semantics(plan)
+    assert worst_severity(checks) == Severity.ERROR
