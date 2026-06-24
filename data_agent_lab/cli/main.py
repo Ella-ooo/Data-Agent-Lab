@@ -9,6 +9,7 @@ from pathlib import Path
 
 from data_agent_lab.agents.pipeline import analyze
 from data_agent_lab.benchmarks.analyze_agent import analyze_agent
+from data_agent_lab.benchmarks.manifest import generate_infiagent_manifest, write_manifest
 from data_agent_lab.benchmarks.registry import get_adapter, list_adapters
 from data_agent_lab.benchmarks.runner import BenchmarkRunner, format_report_summary, load_report
 from data_agent_lab.benchmarks.stubs import failing_agent, stub_agent
@@ -56,6 +57,14 @@ def _build_parser() -> argparse.ArgumentParser:
     export_cmd.add_argument("--adapter", required=True, choices=["golden", "infiagent", "dab"])
     export_cmd.add_argument("--run-dir", type=Path, required=True)
     export_cmd.add_argument("--output", type=Path, required=True)
+
+    manifest_cmd = bench_sub.add_parser("manifest", help="Generate adapter manifest files")
+    manifest_cmd.add_argument("--adapter", required=True, choices=["infiagent"])
+    manifest_cmd.add_argument("--source", type=Path, required=True, help="Task JSON/JSONL file or directory")
+    manifest_cmd.add_argument("--root", type=Path, required=True, help="Root used for relative CSV paths")
+    manifest_cmd.add_argument("--output", type=Path, required=True)
+    manifest_cmd.add_argument("--subset")
+    manifest_cmd.add_argument("--tag", action="append", default=[])
 
     bench_sub.add_parser("adapters", help="List registered adapters")
     return parser
@@ -153,6 +162,17 @@ def main(argv: list[str] | None = None) -> int:
             payload = get_adapter(args.adapter).export_submission(report.outcomes)
         args.output.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         print(f"Exported {len(payload)} rows to {args.output}")
+        return 0
+
+    if args.command == "bench" and args.bench_command == "manifest":
+        manifest = generate_infiagent_manifest(
+            source=args.source,
+            root=args.root,
+            default_tags=args.tag or None,
+            default_subset=args.subset,
+        )
+        write_manifest(manifest, args.output)
+        print(f"Wrote {len(manifest['tasks'])} tasks to {args.output}")
         return 0
 
     parser.error("Unknown command")

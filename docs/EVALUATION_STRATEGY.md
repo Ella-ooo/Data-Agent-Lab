@@ -106,7 +106,15 @@ dal bench list --adapter infiagent \
   --manifest examples/infiagent_manifest/benchmark_manifest.json
 ```
 
-For full DAEval, generate `benchmark_manifest.json` from the upstream validation set (future script).
+For local closed-form CSV subsets, generate `benchmark_manifest.json` from task JSON/JSONL:
+
+```bash
+dal bench manifest --adapter infiagent \
+  --source path/to/tasks.jsonl \
+  --root path/to/infiagent_subset \
+  --output path/to/infiagent_subset/benchmark_manifest.json \
+  --subset demo
+```
 
 ### 4.2 DataAgentBench adapter
 
@@ -187,7 +195,7 @@ Benchmark work runs **alongside** agent slices, not after S5:
 | S0 | Design lock | Adapter interface + golden schema (**done**) |
 | S1 | Profiling pipeline | Golden profiling tasks + `dal bench run` CI |
 | S2 | Single-table loop + PSE grain | Avg-of-avgs golden trap (**done**) |
-| S3 | Multi-table Core + field extractor | Join-loss, broken-join block, and text-field extraction golden traps (**done**); infiagent manifest script next |
+| S3 | Multi-table Core + field extractor | Join-loss, broken-join block, text-field extraction, and infiagent manifest tooling (**done**) |
 | S4 | Stretch analytics | Expand golden + infiagent subset |
 | S5 | Streamlit UI | DAB subset runs + submission export |
 

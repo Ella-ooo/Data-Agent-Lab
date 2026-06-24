@@ -5,6 +5,7 @@ import pytest
 
 from data_agent_lab.benchmarks.adapters.golden import GoldenBenchmarkAdapter
 from data_agent_lab.benchmarks.adapters.infiagent_dabench import InfiAgentDABenchAdapter
+from data_agent_lab.benchmarks.manifest import generate_infiagent_manifest, write_manifest
 from data_agent_lab.benchmarks.registry import get_adapter, list_adapters
 from data_agent_lab.benchmarks.runner import BenchmarkRunner, build_report
 from data_agent_lab.benchmarks.stubs import failing_agent, stub_agent
@@ -86,6 +87,43 @@ def test_infiagent_adapter_reads_manifest(tmp_path):
     assert len(tasks) == 1
     passed, _ = adapter.evaluate(tasks[0], "1")
     assert passed is True
+
+
+def test_generate_infiagent_manifest_from_task_json(tmp_path):
+    csv_path = tmp_path / "data" / "sample.csv"
+    csv_path.parent.mkdir(parents=True)
+    csv_path.write_text("x\n1\n", encoding="utf-8")
+    source = tmp_path / "tasks.json"
+    source.write_text(
+        json.dumps(
+            {
+                "tasks": [
+                    {
+                        "task_id": "demo-json",
+                        "prompt": "What is x?",
+                        "data_path": "data/sample.csv",
+                        "answer": "1",
+                        "type": "exact",
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    manifest = generate_infiagent_manifest(
+        source=source,
+        root=tmp_path,
+        default_tags=["infiagent", "demo"],
+        default_subset="demo",
+    )
+    output = write_manifest(manifest, tmp_path / "benchmark_manifest.json")
+
+    adapter = InfiAgentDABenchAdapter(root=tmp_path, manifest=output)
+    tasks = adapter.list_tasks(subset="demo")
+    assert len(tasks) == 1
+    assert tasks[0].task_id == "demo-json"
+    assert tasks[0].data_paths == (str(csv_path.resolve()),)
 
 
 def test_dab_adapter_requires_root():
