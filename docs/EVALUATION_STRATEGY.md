@@ -187,7 +187,7 @@ Benchmark work runs **alongside** agent slices, not after S5:
 | S0 | Design lock | Adapter interface + golden schema (**done**) |
 | S1 | Profiling pipeline | Golden profiling tasks + `dal bench run` CI |
 | S2 | Single-table loop + PSE grain | Avg-of-avgs golden trap (**done**) |
-| S3 | Multi-table Core + field extractor | Join-loss and text-field extraction golden traps (**done**); infiagent manifest script next |
+| S3 | Multi-table Core + field extractor | Join-loss, broken-join block, and text-field extraction golden traps (**done**); infiagent manifest script next |
 | S4 | Stretch analytics | Expand golden + infiagent subset |
 | S5 | Streamlit UI | DAB subset runs + submission export |
 
@@ -202,5 +202,6 @@ Benchmark work runs **alongside** agent slices, not after S5:
 - `pytest tests/unit/test_benchmark_adapters.py` passes.
 - `dal bench run --adapter golden --agent stub` achieves 100% on configured fixtures.
 - `dal bench run --adapter golden --agent analyze --tag core` achieves 100% on Core golden fixtures.
+- `dal bench run --adapter golden --agent analyze --tag broken-join` blocks broken joins successfully.
 - DAB adapter lists SQLite/DuckDB subset when `--root` is provided.
 - Exported `submission.json` matches DAB leaderboard schema for `dab` adapter.

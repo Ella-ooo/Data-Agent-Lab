@@ -1,0 +1,11 @@
+{
+  "task_id": "multi_table/broken_join_block",
+  "question": "What is total order amount by customer name?",
+  "data_paths": ["data/customers.csv", "data/orders.csv"],
+  "tags": ["negative", "join", "broken-join", "s3"],
+  "subset": "negative",
+  "evaluator": {
+    "type": "contains",
+    "expected": "BLOCKED"
+  }
+}

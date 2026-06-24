@@ -90,6 +90,7 @@ def validate_join_loss(
     plan: dict[str, Any],
     *,
     warn_threshold: float = 0.05,
+    critical_threshold: float = 0.8,
 ) -> list[ValidationCheck]:
     join = plan.get("join")
     if not join:
@@ -119,6 +120,13 @@ def validate_join_loss(
             )
             """
         ).fetchone()[0]
+        joined_rows = conn.execute(
+            f"""
+            SELECT COUNT(*)
+            FROM {left} l
+            JOIN {right} r ON l."{key}" = r."{key}"
+            """
+        ).fetchone()[0]
     except Exception as exc:  # noqa: BLE001 - validation should report SQL issues
         return [
             ValidationCheck(
@@ -140,23 +148,37 @@ def validate_join_loss(
         f"Join coverage on {key}: left_unmatched={left_unmatched}/{left_rows}, "
         f"right_unmatched={right_unmatched}/{right_rows}"
     )
-    return [
+    details = {
+        "left": left,
+        "right": right,
+        "key": key,
+        "left_rows": left_rows,
+        "right_rows": right_rows,
+        "joined_rows": joined_rows,
+        "left_unmatched": left_unmatched,
+        "right_unmatched": right_unmatched,
+        "left_loss_ratio": round(left_loss_ratio, 6),
+        "right_loss_ratio": round(right_loss_ratio, 6),
+        "warn_threshold": warn_threshold,
+        "critical_threshold": critical_threshold,
+    }
+    checks = [
         ValidationCheck(
             "join_loss",
             Severity.WARNING if not passed else Severity.INFO,
             passed,
             message,
-            {
-                "left": left,
-                "right": right,
-                "key": key,
-                "left_rows": left_rows,
-                "right_rows": right_rows,
-                "left_unmatched": left_unmatched,
-                "right_unmatched": right_unmatched,
-                "left_loss_ratio": round(left_loss_ratio, 6),
-                "right_loss_ratio": round(right_loss_ratio, 6),
-                "warn_threshold": warn_threshold,
-            },
+            details,
         )
     ]
+    broken = joined_rows == 0 or max_loss_ratio >= critical_threshold
+    checks.append(
+        ValidationCheck(
+            "broken_join",
+            Severity.CRITICAL if broken else Severity.INFO,
+            not broken,
+            "Join appears broken; matched coverage is too low" if broken else "Join has acceptable matched coverage",
+            details,
+        )
+    )
+    return checks

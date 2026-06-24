@@ -13,6 +13,7 @@ REVENUE_DATA = ROOT / "tests/golden/csv_revenue_agg/data"
 QUALITY_DATA = ROOT / "tests/golden/csv_quality_profile/data"
 AVG_TRAP_DATA = ROOT / "tests/golden/avg_of_avgs_trap/data"
 JOIN_LOSS_DATA = ROOT / "tests/golden/join_loss_orphans/data"
+BROKEN_JOIN_DATA = ROOT / "tests/golden/broken_join_block/data"
 TEXT_YEAR_DATA = ROOT / "tests/golden/text_year_extraction/data"
 
 
@@ -54,14 +55,17 @@ def test_join_loss_validator_reports_unmatched_right_rows():
     checks = validate_join_loss(conn, plan)
     conn.close()
 
-    assert len(checks) == 1
-    check = checks[0]
+    assert {c.name for c in checks} == {"join_loss", "broken_join"}
+    check = [c for c in checks if c.name == "join_loss"][0]
     assert check.name == "join_loss"
     assert check.passed is False
     assert check.severity.value == "warning"
     assert check.details["left_unmatched"] == 0
     assert check.details["right_unmatched"] == 1
     assert check.details["right_loss_ratio"] == 0.2
+    broken = [c for c in checks if c.name == "broken_join"][0]
+    assert broken.passed is True
+    assert broken.severity.value == "info"
 
 
 def test_analyze_join_loss_records_validation_warning():
@@ -74,6 +78,35 @@ def test_analyze_join_loss_records_validation_warning():
     assert join_checks
     assert join_checks[0]["severity"] == "warning"
     assert join_checks[0]["details"]["right_unmatched"] == 1
+
+
+def test_broken_join_validator_reports_critical_failure():
+    conn, catalog = ingest(BROKEN_JOIN_DATA)
+    prof = profile(conn, catalog)
+    plan = {
+        "join": {"left": prof.tables[0].name, "right": prof.tables[1].name, "on": "customer_id"},
+    }
+
+    checks = validate_join_loss(conn, plan)
+    conn.close()
+
+    broken = [c for c in checks if c.name == "broken_join"][0]
+    assert broken.passed is False
+    assert broken.severity.value == "critical"
+    assert broken.details["joined_rows"] == 0
+    assert broken.details["left_loss_ratio"] == 1.0
+    assert broken.details["right_loss_ratio"] == 1.0
+
+
+def test_analyze_broken_join_blocks_answer():
+    result = analyze("What is total order amount by customer name?", BROKEN_JOIN_DATA)
+    assert result.status == "failed"
+    assert result.answer.startswith("[BLOCKED: critical validation failure]")
+
+    validation = json.loads((result.run_root / "validation/validation_log.json").read_text(encoding="utf-8"))
+    broken_checks = [c for c in validation["checks"] if c["name"] == "broken_join"]
+    assert broken_checks
+    assert broken_checks[0]["severity"] == "critical"
 
 
 def test_analyze_text_field_year_extraction():
