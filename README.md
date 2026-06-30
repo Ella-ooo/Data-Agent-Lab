@@ -13,8 +13,8 @@
 |---|---|
 | **中文名** | **Data-Agent-Lab（数据智能体实验台）** |
 | **English** | **Data-Agent-Lab** |
-| **一句话（中文）** | 面向本地 CSV / SQLite / DuckDB 的数据分析 Agent：写 SQL、做验证、留证据、出可复现报告。 |
-| **One-liner (EN)** | A local data analysis agent that writes SQL, validates every answer, and ships a reproducible evidence package. |
+| **功能** | 面向本地 CSV / SQLite / DuckDB 的数据分析 Agent：写 SQL、做验证、留证据、出可复现报告。 |
+| **What can we do** | A local data analysis agent that writes SQL, validates every answer, and ships a reproducible evidence package. |
 
 **中文**
 
@@ -97,23 +97,7 @@ docs/               # 设计文档 | design docs
 
 ---
 
-## GitHub 仓库信息 | Repository Metadata
 
-**Recommended repo name:** `Data-Agent-Lab`
-
-**Description (GitHub About — English, ≤350 chars):**
-
-> Verification-native data analysis agent for local CSV/SQLite/DuckDB. Validates SQL results, exports reproducible evidence packages, and includes benchmark adapters for golden tasks, InfiAgent-DABench, and DataAgentBench.
-
-**简介（GitHub About — 中文，供复制）：**
-
-> 面向本地 CSV/SQLite/DuckDB 的验证原生数据分析 Agent。自动验证 SQL 结果，导出可复现证据包，内置 golden / InfiAgent / DataAgentBench benchmark 适配器。
-
-**Topics / 标签建议:**
-
-`data-agent` `data-analysis` `duckdb` `sql-agent` `verification` `reproducibility` `benchmark` `llm-agent` `data-quality`
-
----
 
 ## 状态 | Status
 
