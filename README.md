@@ -13,8 +13,8 @@
 |---|---|
 | **中文名** | **Data-Agent-Lab（数据智能体实验台）** |
 | **English** | **Data-Agent-Lab** |
-| **一句话（中文）** | 面向本地 CSV / SQLite / DuckDB 的数据分析 Agent：写 SQL、做验证、留证据、出可复现报告。 |
-| **One-liner (EN)** | A local data analysis agent that writes SQL, validates every answer, and ships a reproducible evidence package. |
+| **功能** | 面向本地 CSV / SQLite / DuckDB 的数据分析 Agent：写 SQL、做验证、留证据、出可复现报告。 |
+| **What can we do** | A local data analysis agent that writes SQL, validates every answer, and ships a reproducible evidence package. |
 
 **中文**
 
