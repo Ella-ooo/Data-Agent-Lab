@@ -1,0 +1,11 @@
+{
+  "task_id": "stats/regression_key_driver",
+  "question": "Run regression and explain key drivers of sales.",
+  "data_paths": ["data/drivers.csv"],
+  "tags": ["core", "stats", "regression", "s4"],
+  "subset": "core",
+  "evaluator": {
+    "type": "contains",
+    "expected": "ad_spend"
+  }
+}

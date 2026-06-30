@@ -25,6 +25,9 @@ def test_golden_adapter_lists_fixtures():
     assert "csv_quality/null_rate" in ids
     assert "csv_revenue_agg/overall_average_rating" in ids
     assert "text_field/year_revenue_2020" in ids
+    assert "analytics/monthly_revenue_anomaly" in ids
+    assert "stats/regression_key_driver" in ids
+    assert "multi_table/dirty_join_normalized" in ids
 
 
 def test_golden_adapter_tag_filter():

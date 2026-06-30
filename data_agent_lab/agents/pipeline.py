@@ -17,6 +17,7 @@ from data_agent_lab.catalog.profiler import profile
 from data_agent_lab.reporting.markdown import render_report
 from data_agent_lab.runtime.artifacts import RunContext
 from data_agent_lab.tools.sql import execute_sql
+from data_agent_lab.tools.stats import run_linear_regression
 from data_agent_lab.validation.claim_checks import claim_validation, workflow_reexecution_check
 from data_agent_lab.validation.data_checks import validate_dataset, validate_join_loss, validate_plan_to_code, validate_query_result
 from data_agent_lab.validation.evaluator_writer import write_evaluator
@@ -95,6 +96,25 @@ class AnalyzePipeline:
                 revision += 1
                 ctx.revision_count = revision
                 continue
+
+            if plan.get("task_type") == "regression":
+                cfg = plan.get("regression", {})
+                sql = f"-- statsmodels OLS regression on {plan['tables'][0]}"
+                ctx.write_text("code/queries.sql", sql + "\n")
+                reg_result = run_linear_regression(
+                    conn,
+                    table=plan["tables"][0],
+                    target=cfg.get("target"),
+                    features=cfg.get("features", []),
+                    output_csv=ctx.path("outputs/result.csv"),
+                )
+                if reg_result.error:
+                    exec_error = reg_result.error
+                    revision += 1
+                    ctx.revision_count = revision
+                    continue
+                result_preview = reg_result.preview
+                break
 
             sql = build_sql(plan)
             ctx.write_text("code/queries.sql", sql + "\n")

@@ -9,6 +9,7 @@ build/
 runs/run_*/
 runs/benchmarks/
 !.gitkeep
+output/
 .DS_Store
 .venv/
 venv/

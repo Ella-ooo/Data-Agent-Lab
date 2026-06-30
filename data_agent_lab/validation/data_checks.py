@@ -8,6 +8,7 @@ import duckdb
 
 from data_agent_lab.catalog.schema import DataProfile
 from data_agent_lab.tools.sql import SQLExecutionResult
+from data_agent_lab.validation.join_keys import normalized_key_sql
 from data_agent_lab.validation.types import Severity, ValidationCheck
 
 
@@ -99,6 +100,12 @@ def validate_join_loss(
     left = join["left"]
     right = join["right"]
     key = join["on"]
+    if join.get("normalization") == "deterministic_text":
+        left_key = normalized_key_sql("l", key)
+        right_key = normalized_key_sql("r", key)
+    else:
+        left_key = f'l."{key}"'
+        right_key = f'r."{key}"'
     try:
         left_rows = conn.execute(f'SELECT COUNT(*) FROM {left}').fetchone()[0]
         right_rows = conn.execute(f'SELECT COUNT(*) FROM {right}').fetchone()[0]
@@ -107,7 +114,7 @@ def validate_join_loss(
             SELECT COUNT(*)
             FROM {left} l
             WHERE EXISTS (
-              SELECT 1 FROM {right} r WHERE l."{key}" = r."{key}"
+              SELECT 1 FROM {right} r WHERE {left_key} = {right_key}
             )
             """
         ).fetchone()[0]
@@ -116,7 +123,7 @@ def validate_join_loss(
             SELECT COUNT(*)
             FROM {right} r
             WHERE EXISTS (
-              SELECT 1 FROM {left} l WHERE l."{key}" = r."{key}"
+              SELECT 1 FROM {left} l WHERE {left_key} = {right_key}
             )
             """
         ).fetchone()[0]
@@ -124,7 +131,7 @@ def validate_join_loss(
             f"""
             SELECT COUNT(*)
             FROM {left} l
-            JOIN {right} r ON l."{key}" = r."{key}"
+            JOIN {right} r ON {left_key} = {right_key}
             """
         ).fetchone()[0]
     except Exception as exc:  # noqa: BLE001 - validation should report SQL issues
@@ -161,6 +168,7 @@ def validate_join_loss(
         "right_loss_ratio": round(right_loss_ratio, 6),
         "warn_threshold": warn_threshold,
         "critical_threshold": critical_threshold,
+        "normalization": join.get("normalization"),
     }
     checks = [
         ValidationCheck(

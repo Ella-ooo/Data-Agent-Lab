@@ -1,0 +1,11 @@
+{
+  "task_id": "analytics/monthly_revenue_anomaly",
+  "question": "Find abnormal revenue changes by month.",
+  "data_paths": ["data/revenue.csv"],
+  "tags": ["core", "analytics", "anomaly", "s4"],
+  "subset": "core",
+  "evaluator": {
+    "type": "contains",
+    "expected": "2024-04"
+  }
+}

@@ -78,6 +78,14 @@ def _plan_join(question: str, profile: DataProfile) -> dict[str, Any]:
     keys2 = {c.name for c in t2.columns}
     join_keys = list(keys1.intersection(keys2))
     join_key = join_keys[0] if join_keys else t1.columns[0].name
+    left_key = next((c for c in t1.columns if c.name == join_key), None)
+    right_key = next((c for c in t2.columns if c.name == join_key), None)
+    text_join_key = bool(
+        left_key
+        and right_key
+        and ("CHAR" in left_key.dtype.upper() or left_key.dtype.upper().startswith("VARCHAR"))
+        and ("CHAR" in right_key.dtype.upper() or right_key.dtype.upper().startswith("VARCHAR"))
+    )
     amount_col = _find_column(t2, ("amount", "revenue", "total")) or _find_column(t1, ("amount", "revenue"))
     name_col = _find_column(t1, ("name", "customer"))
     metric = amount_col or "amount"
@@ -92,7 +100,12 @@ def _plan_join(question: str, profile: DataProfile) -> dict[str, Any]:
             {"op": "join", "left": t1.name, "right": t2.name, "on": join_key},
             {"op": "aggregate", "group_by": [name_col or join_key], "metric": metric, "agg": "sum"},
         ],
-        "join": {"left": t1.name, "right": t2.name, "on": join_key},
+        "join": {
+            "left": t1.name,
+            "right": t2.name,
+            "on": join_key,
+            "normalization": "deterministic_text" if text_join_key else None,
+        },
         "expected_result_columns": [name_col or join_key, f"total_{metric}"],
         "expect_nonempty": True,
         "uses_limit": False,
@@ -139,6 +152,44 @@ def classify_and_plan(question: str, profile: DataProfile) -> dict[str, Any]:
     filters = _parse_filters(question, table)
     requested_year = _parse_year(question)
     text_year_col = _find_text_year_column(table)
+
+    if any(k in q for k in ("abnormal", "anomaly", "anomalous", "unusual")) and metric_col and month_col:
+        return {
+            "version": 1,
+            "task_type": "anomaly_detection",
+            "tables": [table_name],
+            "columns": [month_col, metric_col],
+            "aggregation_grain": "monthly",
+            "required_operations": ["window", "rank"],
+            "steps": [
+                {"op": "window", "partition_by": [], "order_by": month_col, "metric": metric_col, "fn": "lag"},
+                {"op": "rank", "by": "abs_change", "order": "desc"},
+            ],
+            "expected_result_columns": [month_col, metric_col, "previous_value", "abs_change"],
+            "expect_nonempty": True,
+            "uses_limit": False,
+            "anomaly": {"time_column": month_col, "metric": metric_col},
+        }
+
+    if any(k in q for k in ("regression", "key driver", "drivers")):
+        target_col = _find_column(table, ("sales", "revenue", "amount", "value")) or _find_numeric_column(table)
+        features = [c.name for c in table.columns if c.name != target_col and c.numeric_mean is not None]
+        return {
+            "version": 1,
+            "task_type": "regression",
+            "tables": [table_name],
+            "columns": [target_col] + features if target_col else features,
+            "aggregation_grain": "row",
+            "required_operations": ["fit_regression", "rank"],
+            "steps": [
+                {"op": "fit_regression", "target": target_col, "features": features},
+                {"op": "rank", "by": "abs_coef", "order": "desc"},
+            ],
+            "expected_result_columns": ["feature", "coef", "pvalue"],
+            "expect_nonempty": True,
+            "uses_limit": False,
+            "regression": {"target": target_col, "features": features},
+        }
 
     if requested_year and text_year_col and metric_col and not filters:
         extracted_name = f"{text_year_col}_year"

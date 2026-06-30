@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from data_agent_lab.validation.join_keys import normalized_key_sql
+
 
 def _quote(col: str) -> str:
     return f'"{col}"'
@@ -51,13 +53,35 @@ def build_sql(plan: dict[str, Any]) -> str:
         select = f"{group_q}, {agg.upper()}({metric_q}) AS {metric_alias}" if group_q else f"{agg.upper()}({metric_q}) AS {metric_alias}"
         group_sql = f" GROUP BY {group_q}" if group_q else ""
         on = j["on"]
+        if j.get("normalization") == "deterministic_text":
+            join_condition = f"{normalized_key_sql('l', on)} = {normalized_key_sql('r', on)}"
+        else:
+            join_condition = f'l."{on}" = r."{on}"'
         return (
             f"SELECT {select} FROM {j['left']} l "
-            f'JOIN {j["right"]} r ON l."{on}" = r."{on}"'
+            f"JOIN {j['right']} r ON {join_condition}"
             f"{group_sql} ORDER BY {metric_alias} DESC"
         )
 
     table = plan["tables"][0]
+
+    if task_type == "anomaly_detection":
+        cfg = plan["anomaly"]
+        time_col = cfg["time_column"]
+        metric = cfg["metric"]
+        return (
+            "WITH series AS ("
+            f"SELECT \"{time_col}\", \"{metric}\", "
+            f"LAG(\"{metric}\") OVER (ORDER BY \"{time_col}\") AS previous_value "
+            f"FROM {table}"
+            "), scored AS ("
+            f"SELECT \"{time_col}\", \"{metric}\", previous_value, "
+            f"ABS(\"{metric}\" - previous_value) AS abs_change "
+            "FROM series WHERE previous_value IS NOT NULL"
+            ") "
+            f"SELECT \"{time_col}\", \"{metric}\", previous_value, abs_change "
+            "FROM scored ORDER BY abs_change DESC"
+        )
 
     if task_type == "data_quality":
         target = plan.get("quality_target")

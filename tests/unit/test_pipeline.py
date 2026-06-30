@@ -15,6 +15,9 @@ AVG_TRAP_DATA = ROOT / "tests/golden/avg_of_avgs_trap/data"
 JOIN_LOSS_DATA = ROOT / "tests/golden/join_loss_orphans/data"
 BROKEN_JOIN_DATA = ROOT / "tests/golden/broken_join_block/data"
 TEXT_YEAR_DATA = ROOT / "tests/golden/text_year_extraction/data"
+ANOMALY_DATA = ROOT / "tests/golden/monthly_anomaly/data"
+REGRESSION_DATA = ROOT / "tests/golden/linear_regression_drivers/data"
+DIRTY_JOIN_DATA = ROOT / "tests/golden/dirty_join_normalized/data"
 
 
 def test_profile_csv_folder():
@@ -117,6 +120,30 @@ def test_analyze_text_field_year_extraction():
     assert "regexp_extract" in result.sql
     assert "2020" in result.sql
     assert "1800" in result.answer
+
+
+def test_analyze_monthly_anomaly_detection():
+    result = analyze("Find abnormal revenue changes by month.", ANOMALY_DATA)
+    assert result.status == "completed"
+    assert result.plan["task_type"] == "anomaly_detection"
+    assert "2024-04" in result.answer
+    assert "abs_change" in result.answer
+
+
+def test_analyze_linear_regression_key_driver():
+    result = analyze("Run regression and explain key drivers of sales.", REGRESSION_DATA)
+    assert result.status == "completed"
+    assert result.plan["task_type"] == "regression"
+    assert "ad_spend" in result.answer
+    assert (result.run_root / "outputs/result.csv").exists()
+
+
+def test_analyze_dirty_join_uses_normalized_key():
+    result = analyze("What is total order amount by customer name?", DIRTY_JOIN_DATA)
+    assert result.status == "completed"
+    assert result.plan["join"]["normalization"] == "deterministic_text"
+    assert "regexp_replace" in result.sql
+    assert "125" in result.answer
 
 
 def test_run_artifacts_created():

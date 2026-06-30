@@ -1,0 +1,1 @@
+{"id":"generated-demo-001","question":"How many rows are in the CSV?","csv_path":"data/sales.csv","expected":"2","eval_type":"exact","tags":["generated","demo"]}

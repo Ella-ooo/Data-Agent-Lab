@@ -32,6 +32,8 @@ Data-Agent-Lab is not a chatbot that happens to run SQL. It is a **verification-
 |------|---------|
 | 数据接入与 Profiling（CSV / SQLite / DuckDB） | Ingestion & profiling for CSV, SQLite, DuckDB |
 | 计划语义引擎 PSE（拦截错误聚合粒度等） | Plan Semantics Engine (PSE) — blocks bad aggregation grain |
+| 异常检测、基础回归、文本字段年份抽取 | Anomaly detection, basic regression, text-field year extraction |
+| Join-loss / broken-join / dirty join normalization | Join-loss, broken-join blocking, dirty join normalization |
 | DuckDB 只读 SQL + 完整 run artifacts | Read-only DuckDB SQL + full run artifacts |
 | Benchmark 适配器：golden / InfiAgent / DataAgentBench | Benchmark adapters: golden, InfiAgent, DAB |
 | CLI + 可选 Streamlit 工作台 | CLI + optional Streamlit workbench |
@@ -115,9 +117,9 @@ docs/               # 设计文档 | design docs
 
 ## 状态 | Status
 
-Core MVP（S0–S3）已实现，无需 LLM API 即可跑通 golden benchmark（6/6 pass）。
+Core MVP + S4 analytics slice 已实现，无需 LLM API 即可跑通 golden benchmark（9/9 pass），broken-join negative benchmark（1/1 pass）。
 
-Stretch：外部 LLM planner、LangGraph 编排、回归/异常检测、完整 DAB 多库支持。
+Stretch remaining：外部 LLM planner、LangGraph 编排、完整 DAB 多库支持、Streamlit workbench。
 
 ---
 
