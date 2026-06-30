@@ -197,7 +197,7 @@ Benchmark work runs **alongside** agent slices, not after S5:
 | S2 | Single-table loop + PSE grain | Avg-of-avgs golden trap (**done**) |
 | S3 | Multi-table Core + field extractor | Join-loss, broken-join block, text-field extraction, and infiagent manifest tooling (**done**) |
 | S4 | Stretch analytics | Anomaly, regression, dirty join normalization, and generated infiagent subset (**done**) |
-| S5 | Streamlit UI | DAB subset runs + submission export |
+| S5 | Streamlit UI | Workbench UI (**done**); DAB subset runs require upstream clone |
 
 ## 9. Non-Goals
 

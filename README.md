@@ -101,9 +101,9 @@ docs/               # 设计文档 | design docs
 
 ## 状态 | Status
 
-Core MVP + S4 analytics slice 已实现，无需 LLM API 即可跑通 golden benchmark（9/9 pass），broken-join negative benchmark（1/1 pass）。
+Core MVP + S4 analytics + S5 Streamlit workbench 已实现，无需 LLM API 即可跑通 golden benchmark（9/9 pass），broken-join negative benchmark（1/1 pass）。
 
-Stretch remaining：外部 LLM planner、LangGraph 编排、完整 DAB 多库支持、Streamlit workbench。
+Stretch remaining：外部 LLM planner、LangGraph 编排、完整 DAB 多库支持。
 
 ---
 
